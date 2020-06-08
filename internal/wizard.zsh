@@ -1736,7 +1736,6 @@ function generate_config() {
     if [[ -n ${(j::)extra_icons} ]]; then
       local branch_icon=${icons[VCS_BRANCH_ICON]// }
       sub VCS_BRANCH_ICON "'$branch_icon '"
-      uncomment os_icon
     else
       uncomment 'typeset -g POWERLEVEL9K_DIR_CLASSES'
       uncomment 'typeset -g POWERLEVEL9K_VCS_VISUAL_IDENTIFIER_EXPANSION'
