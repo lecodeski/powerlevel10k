@@ -23,6 +23,9 @@ else
   function restore_screen() {}
 fi
 
+local -i in_z4h_wizard=0
+[[ $force == 0 && $+functions[z4h] == 1 && -n $Z4H && -e $Z4H/welcome ]] && in_z4h_wizard=1
+
 local -i success=0
 
 {  # always
@@ -277,6 +280,8 @@ function quit() {
     print -P ""
   fi
   function quit() {}
+  stty echo 2>/dev/null
+  show_cursor
   exit 1
 }
 
@@ -419,7 +424,11 @@ local -i greeting_printed=0
 
 function print_greeting() {
   (( greeting_printed )) && return
-  if (( force )); then
+  if (( in_z4h_wizard )); then
+    flowing -c %3FZsh for Humans%f uses %4FPowerlevel10k%f to print command        \
+               line prompt. This wizard will ask you a few questions and configure \
+               prompt for you.
+  elif (( force )); then
     flowing -c This is %4FPowerlevel10k configuration wizard%f. \
                It will ask you a few questions and configure your prompt.
   else
@@ -550,28 +559,20 @@ function install_font() {
       sleep 3
       print -P " %2FOK%f"
       sleep 1
-      restore_screen
+      clear
+      hide_cursor
       print
       flowing +c "%2FMeslo Nerd Font%f" successfully installed.
       print -P ""
       flowing +c Please "%Brestart iTerm2%b" for the changes to take effect.
       print -P ""
-      while true; do
-        flowing +c -i 5 "  1. Click" "%BiTerm2 → Quit iTerm2%b" or press "%B⌘ Q%b."
-        flowing +c -i 5 "  2. Open %BiTerm2%b."
-        print -P ""
-        local key=
-        read -k key${(%):-"?%BWill you restart iTerm2 before proceeding? [yN]: %b"} || quit -c
-        if [[ $key = (y|Y) ]]; then
-          print -P ""
-          print -P ""
-          exit 69
-        fi
-        print -P ""
-        print -P ""
-        flowing +c "It's" important to "%Brestart iTerm2%b" for the changes to take effect.
-        print -P ""
-      done
+      flowing +c -i 5 "  1. Click" "%BiTerm2 → Quit iTerm2%b" or press "%B⌘ Q%b."
+      flowing +c -i 5 "  2. Open %BiTerm2%b."
+      print -P ""
+      flowing +c "It's" important to "%Brestart iTerm2%b" by following the instructions above.   \
+                 "It's" "%Bnot enough%b" to close iTerm2 by clicking on the red circle. You must \
+                 click "%BiTerm2 → Quit iTerm2%b" or press "%B⌘ Q%b."
+      while true; do sleep 60 2>/dev/null; done
     ;;
   esac
 
@@ -978,7 +979,7 @@ function ask_color() {
     r) return 1;;
     [1-4]) color=$choice;;
   esac
-  options+=${(L)color_name[color]}
+  options+=${${(L)color_name[color]}//ı/i}
   return 0
 }
 
@@ -1005,7 +1006,7 @@ function ask_ornaments_color() {
     r) return 1;;
     [1-4]) color=$choice;;
   esac
-  options+=${(L)color_name[color]}-ornaments
+  options+=${${(L)color_name[color]}//ı/i}-ornaments
   return 0
 }
 
@@ -1576,7 +1577,9 @@ function ask_zshrc_edit() {
     local h7='$ZDOTDIR/.p10k.zsh'
     local h8='"$ZDOTDIR/.p10k.zsh"'
     local h9='"$ZDOTDIR"/.p10k.zsh'
-    if [[ -n ${(@M)lines:#(#b)[^#]#([^[:IDENT:]]|)source[[:space:]]##($f1|$f2|$f3|$f4|$g1|$h0|$h1|$h2|$h3|$h4|$h5|$h6|$h7|$h8|$h9)(|[[:space:]]*|'#'*)} ]]; then
+    local h10='$POWERLEVEL9K_CONFIG_FILE'
+    local h11='"$POWERLEVEL9K_CONFIG_FILE"'
+    if [[ -n ${(@M)lines:#(#b)[^#]#([^[:IDENT:]]|)source[[:space:]]##($f1|$f2|$f3|$f4|$g1|$h0|$h1|$h2|$h3|$h4|$h5|$h6|$h7|$h8|$h9|$h10|$h11)(|[[:space:]]*|'#'*)} ]]; then
       zshrc_has_cfg=1
     fi
     local pre='${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh'
@@ -2071,22 +2074,27 @@ while true; do
 done
 
 restore_screen
-print
 
-flowing +c New config: "%B${__p9k_cfg_path_u//\\/\\\\}%b."
-if [[ -n $config_backup ]]; then
-  flowing +c Backup of the old config: "%B${config_backup_u//\\/\\\\}%b."
-fi
-if [[ -n $zshrc_backup ]]; then
-  flowing +c Backup of "%B${__p9k_zshrc_u//\\/\\\\}%b:" "%B${zshrc_backup_u//\\/\\\\}%b."
+if (( !in_z4h_wizard )); then
+  print
+
+  flowing +c New config: "%B${__p9k_cfg_path_u//\\/\\\\}%b."
+  if [[ -n $config_backup ]]; then
+    flowing +c Backup of the old config: "%B${config_backup_u//\\/\\\\}%b."
+  fi
+  if [[ -n $zshrc_backup ]]; then
+    flowing +c Backup of "%B${__p9k_zshrc_u//\\/\\\\}%b:" "%B${zshrc_backup_u//\\/\\\\}%b."
+  fi
 fi
 
 generate_config || return
 change_zshrc    || return
 
-print -rP ""
-flowing +c File feature requests and bug reports at "$(href https://github.com/romkatv/powerlevel10k/issues)"
-print -rP ""
+if (( !in_z4h_wizard )); then
+  print -rP ""
+  flowing +c File feature requests and bug reports at "$(href https://github.com/romkatv/powerlevel10k/issues)"
+  print -rP ""
+fi
 
 success=1
 

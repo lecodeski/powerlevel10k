@@ -92,7 +92,7 @@ Note how the effect of every command is instantly reflected by the very next pro
 | `timew start hack linux`      | `🛡️ hack linux`  | time tracking enabled in [timewarrior](https://timewarrior.net/)      |
 | `touch x y`                   | `?2`             | 2 untracked files in the Git repo                                     |
 | `rm COPYING`                  | `!1`             | 1 unstaged change in the Git repo                                     |
-| `echo 2.7.3 >.python-version` | `🐍 2.7.3`       | the current python version in [pyenv](https://github.com/pyenv/pyenv) |
+| `echo 3.7.3 >.python-version` | `🐍 3.7.3`       | the current python version in [pyenv](https://github.com/pyenv/pyenv) |
 
 Other Zsh themes capable of displaying the same information either produce prompt lag or print
 prompt that doesn't reflect the current state of the system and then refresh it later. With
@@ -348,7 +348,7 @@ Powerlevel10k.
 
 ```zsh
 git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/powerlevel10k
-echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>! ~/.zshrc
+echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
 ```
 
 Users in mainland China can use the official mirror on gitee.com for faster download.<br>
@@ -356,7 +356,7 @@ Users in mainland China can use the official mirror on gitee.com for faster down
 
 ```zsh
 git clone --depth=1 https://gitee.com/romkatv/powerlevel10k.git ~/powerlevel10k
-echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>! ~/.zshrc
+echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
 ```
 
 This is the simplest kind of installation and it works even if you are using a plugin manager. Just
@@ -421,15 +421,23 @@ supported by Powerlevel10k.
 
 ```zsh
 brew install romkatv/powerlevel10k/powerlevel10k
-echo 'source /usr/local/opt/powerlevel10k/powerlevel10k.zsh-theme' >>! ~/.zshrc
+echo 'source /usr/local/opt/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
 ```
 
 ### Arch Linux
 
 ```zsh
-yay -Sy --noconfirm zsh-theme-powerlevel10k-git
-echo 'source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme' >>! ~/.zshrc
+yay -S --noconfirm zsh-theme-powerlevel10k-git
+echo 'source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
 ```
+
+[zsh-theme-powerlevel10k-git](https://aur.archlinux.org/packages/zsh-theme-powerlevel10k-git/)
+referenced above is the official Powerlevel10k package.
+
+There is also [zsh-theme-powerlevel10k](
+  https://www.archlinux.org/packages/community/x86_64/zsh-theme-powerlevel10k/) community package.
+Historicaly, [it has been breaking often and for extended periods of time](
+  https://github.com/romkatv/powerlevel10k/pull/786). **Do not use it.**
 
 ## Configuration
 
@@ -492,7 +500,7 @@ the default system fonts. The full choice of style options is available only whe
 
 👇 **Recommended font**: Meslo Nerd Font patched for Powerlevel10k. 👇
 
-### <a name='recommended-meslo-nerd-font-patched-for-powerlevel10k'></a>Meslo Nerd Font patched for Powerlevel10k
+### <a name='recommended-meslo-nerd-font-patched-for-powerlevel10k'></a><a name='font'></a>Meslo Nerd Font patched for Powerlevel10k
 
 Gorgeous monospace font designed by Jim Lyles for Bitstream, customized by the same for Apple,
 further customized by André Berg, and finally patched by yours truly with customized scripts
@@ -556,13 +564,18 @@ applications on your system. Configure your terminal to use this font:
 - **Guake**: Right Click on an open terminal and open *Preferences*. Under *Appearance* 
   tab, uncheck *Use the system fixed width font* (if not already) and select `MesloLGS NF Regular`. 
   Exit the Preferences dialog by clicking *Close*.  
-- **Alacritty**: Create or open `~/.config/alacritty/alacritty.yml` and and the following section
+- **Alacritty**: Create or open `~/.config/alacritty/alacritty.yml` and add the following section
   to it:
   ```yaml
   font:
     normal:
       family: "MesloLGS NF"
   ```
+ - **Kitty**: Create or open `~/.config/kitty/kitty.conf` and add the following line to it:
+   ```text
+   font_family MesloLGS NF
+   ```
+   Restart Kitty by closing all sessions and opening a new session.
 
 **IMPORTANT:** Run `p10k configure` after changing terminal font. The old `~/.p10k.zsh` may work
 incorrectly with the new font.
@@ -613,7 +626,7 @@ The command to update Powerlevel10k depends on how it was installed.
 | [Zplugin](#zplugin)       | `zplugin update`                                            |
 | [Zinit](#zinit)           | `zinit update`                                              |
 | [Homebrew](#homebrew)     | `brew update && brew upgrade`                               |
-| [Arch Linux](#arch-linux) | `yay -Syu --noconfirm --needed zsh-theme-powerlevel10k-git` |
+| [Arch Linux](#arch-linux) | `yay -S --noconfirm zsh-theme-powerlevel10k-git`            |
 
 **IMPORTANT**: Restart Zsh after updating Powerlevel10k. [Do not use `source ~/.zshrc`](
   #weird-things-happen-after-typing-source-zshrc).
@@ -666,6 +679,33 @@ The command to update Powerlevel10k depends on how it was installed.
    | [Arch Linux](#arch-linux) | `yay -R --noconfirm zsh-theme-powerlevel10k-git`                 |
 5. Restart Zsh. [Do not use `source ~/.zshrc`](#weird-things-happen-after-typing-source-zshrc).
 
+### How do I install Powerlevel10k on a machine without Internet access?
+
+1. Run this command on the machine without Internet access:
+   ```sh
+   uname -sm | tr '[A-Z]' '[a-z]'
+   ```
+2. Run these commands on a machine connected to the Internet after replacing the value of
+   `target_uname` with the output of the previous command:
+   ```sh
+   target_uname="replace this with the output of the previous command"
+   git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/powerlevel10k
+   GITSTATUS_CACHE_DIR="$HOME"/powerlevel10k/gitstatus/usrbin ~/powerlevel10k/gitstatus/install -f -s "${target_uname% *}" -m "${target_uname#* }"
+   ```
+3. Copy `~/powerlevel10k` from the machine connected to the Internet to the one without Internet
+   access.
+4. Add `source ~/powerlevel10k/powerlevel10k.zsh-theme` to `~/.zshrc` on the machine without
+   Internet access:
+   ```zsh
+   echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
+   ```
+5. If `~/.zshrc` on the machine without Internet access sets `ZSH_THEME`, remove that line.
+   ```zsh
+   sed -i.bak '/^ZSH_THEME=/d' ~/.zshrc
+   ```
+
+To update, remove `~/powerlevel10k` on both machines and repeat steps 1-3.
+
 ### Where can I ask for help and report bugs?
 
 The best way to ask for help and to report bugs is to [open an issue](
@@ -689,15 +729,17 @@ Powerlevel10k defines prompt and nothing else. It sets [prompt-related options](
   https://raw.githubusercontent.com/romkatv/powerlevel10k-media/master/prompt-highlight.png)
 
 Everything within the highlighted areas on the screenshot is produced by Powerlevel10k.
-Powerlevel10k has no control over the terminal content or color outside these areas.
+Powerlevel10k has no control over the terminal content or colors outside these areas.
 
 Powerlevel10k does not affect:
 
-- Terminal window title.
+- Terminal window/tab title.
 - Colors used by `ls`.
-- Content and style of command completions.
+- The behavior of `git` command.
+- The content and style of <kbd>Tab</kbd> completions.
 - Command line colors (syntax highlighting, autosuggestions, etc.).
 - Key bindings.
+- Aliases.
 - Prompt parameters other than `PS1` and `RPS1`.
 - Zsh options other than those [related to prompt](
     http://zsh.sourceforge.net/Doc/Release/Options.html#Prompting).
@@ -1477,7 +1519,7 @@ theme (so that you end up with no theme) and then installing Powerlevel10k manua
 
 ```zsh
 git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/powerlevel10k
-echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>! ~/.zshrc
+echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
 ```
 
 This method of installation won't make anything slower or otherwise sub-par.
@@ -1729,6 +1771,7 @@ typeset -g POWERLEVEL9K_OS_ICON_CONTENT_EXPANSION='${P9K_CONTENT}'  # not bold
 - [FAQ](#faq)
   - [How do I update Powerlevel10k?](#how-do-i-update-powerlevel10k)
   - [How do I uninstall Powerlevel10k?](#how-do-i-uninstall-powerlevel10k)
+  - [How do I install Powerlevel10k on a machine without Internet access?](#how-do-i-install-powerlevel10k-on-a-machine-without-internet-access)
   - [Where can I ask for help and report bugs?](#where-can-i-ask-for-help-and-report-bugs)
   - [Which aspects of shell and terminal does Powerlevel10k affect?](#which-aspects-of-shell-and-terminal-does-powerlevel10k-affect)
   - [I'm using Powerlevel9k with Oh My Zsh. How do I migrate?](#im-using-powerlevel9k-with-oh-my-zsh-how-do-i-migrate)
