@@ -471,7 +471,7 @@
   # it will signify success by turning green.
   typeset -g POWERLEVEL9K_STATUS_OK=true
   typeset -g POWERLEVEL9K_STATUS_OK_VISUAL_IDENTIFIER_EXPANSION='✔'
-  # typeset -g POWERLEVEL9K_STATUS_OK_FOREGROUND=2
+  typeset -g POWERLEVEL9K_STATUS_OK_FOREGROUND=7
   # typeset -g POWERLEVEL9K_STATUS_OK_BACKGROUND=0
 
   # Status when some part of a pipe command fails but the overall exit status is zero. It may look
@@ -1576,7 +1576,7 @@
   ####################################[ time: current time ]####################################
   # Current time color.
   # typeset -g POWERLEVEL9K_TIME_FOREGROUND=0
-  # typeset -g POWERLEVEL9K_TIME_BACKGROUND=7
+  typeset -g POWERLEVEL9K_TIME_BACKGROUND=2
   # Format for the current time: 09:51:02. See `man 3 strftime`.
   typeset -g POWERLEVEL9K_TIME_FORMAT='%D{%H:%M:%S}'
   # If set to true, time will update when you hit enter. This way prompts for the past
