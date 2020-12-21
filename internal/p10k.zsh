@@ -300,20 +300,19 @@ function _p9k_upglob() {
 #   _p9k_prompt_length '%F{red}abc' => 3
 #   _p9k_prompt_length $'%{a\b%Gb%}' => 1
 function _p9k_prompt_length() {
-  local COLUMNS=1024
+  local -i COLUMNS=1024
   local -i x y=$#1 m
   if (( y )); then
     while (( ${${(%):-$1%$y(l.1.0)}[-1]} )); do
       x=y
-      (( y *= 2 ));
+      (( y *= 2 ))
     done
-    local xy
     while (( y > x + 1 )); do
-      m=$(( x + (y - x) / 2 ))
-      typeset ${${(%):-$1%$m(l.x.y)}[-1]}=$m
+      (( m = x + (y - x) / 2 ))
+      (( ${${(%):-$1%$m(l.x.y)}[-1]} = m ))
     done
   fi
-  _p9k__ret=$x
+  typeset -g _p9k__ret=$x
 }
 
 typeset -gr __p9k_byte_suffix=('B' 'K' 'M' 'G' 'T' 'P' 'E' 'Z' 'Y')
@@ -1902,8 +1901,12 @@ prompt_dir() {
     ;;
   esac
 
-  [[ $_POWERLEVEL9K_DIR_SHOW_WRITABLE != 0 && ! -w $_p9k__cwd ]]
-  local w=$?
+  # w=0: writable
+  # w=1: not writable
+  # w=2: does not exist
+  (( !_POWERLEVEL9K_DIR_SHOW_WRITABLE )) || [[ -w $_p9k__cwd ]]
+  local -i w=$?
+  (( w && _POWERLEVEL9K_DIR_SHOW_WRITABLE > 2 )) && [[ ! -e $_p9k__cwd ]] && w=2
   if ! _p9k_cache_ephemeral_get $0 $_p9k__cwd $p $w $fake_first "${parts[@]}"; then
     local state=$0
     local icon=''
@@ -1915,9 +1918,11 @@ prompt_dir() {
         break
       fi
     done
-    if (( ! w )); then
+    if (( w )); then
       if (( _POWERLEVEL9K_DIR_SHOW_WRITABLE == 1 )); then
         state=${0}_NOT_WRITABLE
+      elif (( w == 2 )); then
+        state+=_NON_EXISTENT
       else
         state+=_NOT_WRITABLE
       fi
@@ -4588,7 +4593,7 @@ typeset -gra __p9k_nordvpn_tag=(
 function _p9k_fetch_nordvpn_status() {
   setopt err_return
   local REPLY
-  zsocket /run/nordvpnd.sock
+  zsocket $1
   local -i fd=$REPLY
   {
     >&$fd echo -nE - $'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n\0\0\0\4\1\0\0\0\0\0\0N\1\4\0\0\0\1\203\206E\221bA\226\223\325\\k\337\31i=LnH\323j?A\223\266\243y\270\303\fYmLT{$\357]R.\203\223\257_\213\35u\320b\r&=LMedz\212\232\312\310\264\307`+\210K\203@\2te\206M\2035\5\261\37\0\0\5\0\1\0\0\0\1\0\0\0\0\0'
@@ -4664,21 +4669,29 @@ function _p9k_fetch_nordvpn_status() {
 #   POWERLEVEL9K_NORDVPN_CONNECTING_BACKGROUND=cyan
 function prompt_nordvpn() {
   unset $__p9k_nordvpn_tag P9K_NORDVPN_COUNTRY_CODE
-  if [[ -e /run/nordvpnd.sock ]]; then
-    _p9k_fetch_nordvpn_status 2>/dev/null
-    if [[ $P9K_NORDVPN_SERVER == (#b)([[:alpha:]]##)[[:digit:]]##.nordvpn.com ]]; then
-      typeset -g P9K_NORDVPN_COUNTRY_CODE=${${(U)match[1]}//İ/I}
-    fi
+  if [[ -e /run/nordvpn/nordvpnd.sock ]]; then
+    sock=/run/nordvpn/nordvpnd.sock
+  elif [[ -e /run/nordvpnd.sock ]]; then
+    sock=/run/nordvpnd.sock
+  else
+    return
+  fi
+  _p9k_fetch_nordvpn_status $sock 2>/dev/null
+  if [[ $P9K_NORDVPN_SERVER == (#b)([[:alpha:]]##)[[:digit:]]##.nordvpn.com ]]; then
+    typeset -g P9K_NORDVPN_COUNTRY_CODE=${${(U)match[1]}//İ/I}
   fi
   case $P9K_NORDVPN_STATUS in
     Connected)
-      _p9k_prompt_segment $0_CONNECTED blue   white NORDVPN_ICON 0 '' "$P9K_NORDVPN_COUNTRY_CODE";;
+      _p9k_prompt_segment $0_CONNECTED blue   white NORDVPN_ICON 0 '' "$P9K_NORDVPN_COUNTRY_CODE"
+    ;;
     Disconnected|Connecting|Disconnecting)
       local state=${${(U)P9K_NORDVPN_STATUS}//İ/I}
       _p9k_get_icon $0_$state FAIL_ICON
-      _p9k_prompt_segment $0_$state    yellow white NORDVPN_ICON 0 '' "$_p9k__ret";;
+      _p9k_prompt_segment $0_$state    yellow white NORDVPN_ICON 0 '' "$_p9k__ret"
+    ;;
     *)
-      _p9k_prompt_segment $0_MISSING   blue   white ''        0 '' '';;
+      return
+    ;;
   esac
 }
 
@@ -5062,7 +5075,7 @@ _p9k_prompt_wifi_async() {
       lines=(${(f)"$(command iw dev $iface link)"}) || return 0
       local -a match mbegin mend
       for line in $lines; do
-        if [[ $line == (#b)[[:space:]]#SSID:[[:space:]]##([^[:space:]]##) ]]; then
+        if [[ $line == (#b)[[:space:]]#SSID:[[:space:]]##(*) ]]; then
           ssid=$match[1]
         elif [[ $line == (#b)[[:space:]]#'tx bitrate:'[[:space:]]##([^[:space:]]##)' MBit/s'* ]]; then
           last_tx_rate=$match[1]
@@ -6005,20 +6018,19 @@ _p9k_dump_instant_prompt() {
   (( height += ${#${__p9k_used_instant_prompt[1]//[^$lf]}} ))
   local _p9k__ret
   function _p9k_prompt_length() {
-    local COLUMNS=1024
+    local -i COLUMNS=1024
     local -i x y=$#1 m
     if (( y )); then
       while (( ${${(%):-$1%$y(l.1.0)}[-1]} )); do
         x=y
-        (( y *= 2 ));
+        (( y *= 2 ))
       done
-      local xy
       while (( y > x + 1 )); do
-        m=$(( x + (y - x) / 2 ))
-        typeset ${${(%):-$1%$m(l.x.y)}[-1]}=$m
+        (( m = x + (y - x) / 2 ))
+        (( ${${(%):-$1%$m(l.x.y)}[-1]} = m ))
       done
     fi
-    _p9k__ret=$x
+    typeset -g _p9k__ret=$x
   }
   local out
   if [[ $+VTE_VERSION == 0 && $TERM_PROGRAM != Hyper ]] || (( ! $+_p9k__g )); then
@@ -6027,7 +6039,7 @@ _p9k_dump_instant_prompt() {
     local -i fill=$((COLUMNS > _p9k__ret ? COLUMNS - _p9k__ret : 0))
     out+="${(%):-%b%k%f%s%u$mark${(pl.$fill.. .)}$cr%b%k%f%s%u%E}"
   fi
-  out+="${(pl.$height..$lf.)}$esc${height}A$terminfo[sc]"
+  (( _z4h_can_save_restore_screen == 1 )) || out+="${(pl.$height..$lf.)}$esc${height}A$terminfo[sc]"
   out+=${(%):-"$__p9k_used_instant_prompt[1]$__p9k_used_instant_prompt[2]"}
   if [[ -n $__p9k_used_instant_prompt[3] ]]; then
     _p9k_prompt_length "$__p9k_used_instant_prompt[2]"
@@ -6038,6 +6050,7 @@ _p9k_dump_instant_prompt() {
       out+="${(pl.$gap.. .)}${(%):-${__p9k_used_instant_prompt[3]}%b%k%f%s%u}$cr$esc${left_len}C"
     fi
   fi
+  (( _z4h_can_save_restore_screen == 1 )) && out+="$cr$esc${height}A$terminfo[sc]$out"
   typeset -g __p9k_instant_prompt_output=${TMPDIR:-/tmp}/p10k-instant-prompt-output-${(%):-%n}-$$
   { echo -n > $__p9k_instant_prompt_output } || return
   print -rn -- "$out" || return
@@ -7069,6 +7082,7 @@ _p9k_init_params() {
   case $_POWERLEVEL9K_DIR_SHOW_WRITABLE in
     true) _POWERLEVEL9K_DIR_SHOW_WRITABLE=1;;
     v2)   _POWERLEVEL9K_DIR_SHOW_WRITABLE=2;;
+    v3)   _POWERLEVEL9K_DIR_SHOW_WRITABLE=3;;
     *)    _POWERLEVEL9K_DIR_SHOW_WRITABLE=0;;
   esac
   typeset -gi _POWERLEVEL9K_DIR_SHOW_WRITABLE
@@ -7841,8 +7855,13 @@ _p9k_init_prompt() {
   fi
 
   if [[ $ITERM_SHELL_INTEGRATION_INSTALLED == Yes ]]; then
-    _p9k_prompt_prefix_left+=$'%{\e]133;A\a%}'
-    _p9k_prompt_suffix_left+=$'%{\e]133;B\a%}'
+    if (( $+_z4h_iterm_cmd && _z4h_can_save_restore_screen == 1 )); then
+      _p9k_prompt_prefix_left+=$'%{\ePtmux;\e\e]133;A\a\e\\%}'
+      _p9k_prompt_suffix_left+=$'%{\ePtmux;\e\e]133;B\a\e\\%}'
+    else
+      _p9k_prompt_prefix_left+=$'%{\e]133;A\a%}'
+      _p9k_prompt_suffix_left+=$'%{\e]133;B\a%}'
+    fi
   fi
 
   if (( _POWERLEVEL9K_PROMPT_ADD_NEWLINE_COUNT > 0 )); then
@@ -7933,7 +7952,7 @@ _p9k_must_init() {
     [[ $sig == $_p9k__param_sig ]] && return 1
     _p9k_deinit
   fi
-  _p9k__param_pat=$'v109\1'${(q)ZSH_VERSION}$'\1'${(q)ZSH_PATCHLEVEL}$'\1'
+  _p9k__param_pat=$'v113\1'${(q)ZSH_VERSION}$'\1'${(q)ZSH_PATCHLEVEL}$'\1'
   _p9k__param_pat+=$'${#parameters[(I)POWERLEVEL9K_*]}\1${(%):-%n%#}\1$GITSTATUS_LOG_LEVEL\1'
   _p9k__param_pat+=$'$GITSTATUS_ENABLE_LOGGING\1$GITSTATUS_DAEMON\1$GITSTATUS_NUM_THREADS\1'
   _p9k__param_pat+=$'$GITSTATUS_CACHE_DIR\1$GITSTATUS_AUTO_INSTALL\1${ZLE_RPROMPT_INDENT:-1}\1'
@@ -7942,7 +7961,8 @@ _p9k_must_init() {
   _p9k__param_pat+=$'${(M)VTE_VERSION:#(<1-4602>|4801)}\1$DEFAULT_USER\1$P9K_SSH\1$+commands[uname]\1'
   _p9k__param_pat+=$'$__p9k_root_dir\1$functions[p10k-on-init]\1$functions[p10k-on-pre-prompt]\1'
   _p9k__param_pat+=$'$functions[p10k-on-post-widget]\1$functions[p10k-on-post-prompt]\1'
-  _p9k__param_pat+=$'$+commands[git]\1$terminfo[colors]'
+  _p9k__param_pat+=$'$+commands[git]\1$terminfo[colors]\1${+_z4h_iterm_cmd}\1'
+  _p9k__param_pat+=$'$_z4h_can_save_restore_screen'
   local MATCH
   IFS=$'\1' _p9k__param_pat+="${(@)${(@o)parameters[(I)POWERLEVEL9K_*]}:/(#m)*/\${${(q)MATCH}-$IFS\}}"
   IFS=$'\2' _p9k__param_sig="${(e)_p9k__param_pat}"
@@ -8006,7 +8026,11 @@ function _p9k_init_cacheable() {
     _p9k_transient_prompt+='${:-"'$_p9k__ret'"}'
     _p9k_transient_prompt+=')%b%k%f%s%u '
     if [[ $ITERM_SHELL_INTEGRATION_INSTALLED == Yes ]]; then
-      _p9k_transient_prompt=$'%{\e]133;A\a%}'$_p9k_transient_prompt$'%{\e]133;B\a%}'
+      if (( $+_z4h_iterm_cmd && _z4h_can_save_restore_screen == 1 )); then
+        _p9k_transient_prompt=$'%{\ePtmux;\e\e]133;A\a\e\\%}'$_p9k_transient_prompt$'%{\ePtmux;\e\e]133;B\a\e\\%}'
+      else
+        _p9k_transient_prompt=$'%{\e]133;A\a%}'$_p9k_transient_prompt$'%{\e]133;B\a%}'
+      fi
     fi
   fi
 
