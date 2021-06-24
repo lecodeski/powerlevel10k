@@ -5893,7 +5893,7 @@ _p9k_set_instant_prompt() {
   [[ -n $RPROMPT ]] || unset RPROMPT
 }
 
-typeset -gri __p9k_instant_prompt_version=39
+typeset -gri __p9k_instant_prompt_version=41
 
 _p9k_dump_instant_prompt() {
   local user=${(%):-%n}
@@ -5937,10 +5937,13 @@ _p9k_dump_instant_prompt() {
   local PROMPT_EOL_MARK=${(q)PROMPT_EOL_MARK-%B%S%#%s%b}
   [[ -n \$SSH_CLIENT || -n \$SSH_TTY || -n \$SSH_CONNECTION ]] && local ssh=1 || local ssh=0
   local cr=\$'\r' lf=\$'\n' esc=\$'\e[' rs=$'\x1e' us=$'\x1f'
-  local -i height=$_POWERLEVEL9K_INSTANT_PROMPT_COMMAND_LINES
+  local -i height=${_POWERLEVEL9K_INSTANT_PROMPT_COMMAND_LINES-1}
   local prompt_dir=${(q)prompt_dir}"
+      if (( ! ${+_POWERLEVEL9K_INSTANT_PROMPT_COMMAND_LINES} )); then
+        >&$fd print -r -- '
+  (( _z4h_can_save_restore_screen == 1 )) && height=0'
+      fi
       >&$fd print -r -- '
-  (( _z4h_can_save_restore_screen == 1 )) && height=0
   local real_gitstatus_header
   if [[ -r $gitstatus_dir/install.info ]]; then
     IFS= read -r real_gitstatus_header <$gitstatus_dir/install.info || real_gitstatus_header=borked
@@ -6138,7 +6141,8 @@ _p9k_dump_instant_prompt() {
       (( __p9k_ksh_arrays )) && >&$fd print -r -- '  unsetopt ksh_arrays'
       (( __p9k_sh_glob )) && >&$fd print -r -- '  unsetopt sh_glob'
       >&$fd print -r -- '
-  (( height += ${#${__p9k_used_instant_prompt[1]//[^$lf]}} ))
+  local -i prompt_height=${#${__p9k_used_instant_prompt[1]//[^$lf]}}
+  (( height += prompt_height ))
   local _p9k__ret
   function _p9k_prompt_length() {
     local -i COLUMNS=1024
@@ -6162,18 +6166,29 @@ _p9k_dump_instant_prompt() {
     local -i fill=$((COLUMNS > _p9k__ret ? COLUMNS - _p9k__ret : 0))
     out+="${(%):-%b%k%f%s%u$mark${(pl.$fill.. .)}$cr%b%k%f%s%u%E}"
   fi
-  (( _z4h_can_save_restore_screen == 1 )) || out+="${(pl.$height..$lf.)}$esc${height}A$terminfo[sc]"
+  if (( _z4h_can_save_restore_screen != 1 )); then
+    (( height )) && out+="${(pl.$height..$lf.)}$esc${height}A"
+    out+="$terminfo[sc]"
+  fi
   out+=${(%):-"$__p9k_used_instant_prompt[1]$__p9k_used_instant_prompt[2]"}
   if [[ -n $__p9k_used_instant_prompt[3] ]]; then
     _p9k_prompt_length "$__p9k_used_instant_prompt[2]"
     local -i left_len=_p9k__ret
     _p9k_prompt_length "$__p9k_used_instant_prompt[3]"
-    local -i gap=$((COLUMNS - left_len - _p9k__ret - ZLE_RPROMPT_INDENT))
-    if (( gap >= 40 )); then
-      out+="${(pl.$gap.. .)}${(%):-${__p9k_used_instant_prompt[3]}%b%k%f%s%u}$cr$esc${left_len}C"
+    if (( _p9k__ret )); then
+      local -i gap=$((COLUMNS - left_len - _p9k__ret - ZLE_RPROMPT_INDENT))
+      if (( gap >= 40 )); then
+        out+="${(pl.$gap.. .)}${(%):-${__p9k_used_instant_prompt[3]}%b%k%f%s%u}$cr$esc${left_len}C"
+      fi
     fi
   fi
-  (( _z4h_can_save_restore_screen == 1 )) && out+="$cr$esc${height}A$terminfo[sc]$out"
+  if (( _z4h_can_save_restore_screen == 1 )); then
+    if (( height )); then
+      out+="$cr${(pl:$((height-prompt_height))::\n:)}$esc${height}A$terminfo[sc]$out"
+    else
+      out+="$cr${(pl:$((height-prompt_height))::\n:)}$terminfo[sc]$out"
+    fi
+  fi
   typeset -g __p9k_instant_prompt_output=${TMPDIR:-/tmp}/p10k-instant-prompt-output-${(%):-%n}-$$
   { echo -n > $__p9k_instant_prompt_output } || return
   print -rn -- "$out" || return
@@ -7118,7 +7133,7 @@ _p9k_init_params() {
   _p9k_declare -b POWERLEVEL9K_TODO_HIDE_ZERO_FILTERED 0
   _p9k_declare -b POWERLEVEL9K_DISABLE_HOT_RELOAD 0
   _p9k_declare -F POWERLEVEL9K_NEW_TTY_MAX_AGE_SECONDS 5
-  _p9k_declare -i POWERLEVEL9K_INSTANT_PROMPT_COMMAND_LINES 1
+  _p9k_declare -i POWERLEVEL9K_INSTANT_PROMPT_COMMAND_LINES
   _p9k_declare -a POWERLEVEL9K_LEFT_PROMPT_ELEMENTS -- context dir vcs
   _p9k_declare -a POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS -- status root_indicator background_jobs history time
   _p9k_declare -b POWERLEVEL9K_DISABLE_RPROMPT 0
@@ -8101,7 +8116,7 @@ _p9k_must_init() {
     [[ $sig == $_p9k__param_sig ]] && return 1
     _p9k_deinit
   fi
-  _p9k__param_pat=$'v123\1'${(q)ZSH_VERSION}$'\1'${(q)ZSH_PATCHLEVEL}$'\1'
+  _p9k__param_pat=$'v124\1'${(q)ZSH_VERSION}$'\1'${(q)ZSH_PATCHLEVEL}$'\1'
   _p9k__param_pat+=$'${#parameters[(I)POWERLEVEL9K_*]}\1${(%):-%n%#}\1$GITSTATUS_LOG_LEVEL\1'
   _p9k__param_pat+=$'$GITSTATUS_ENABLE_LOGGING\1$GITSTATUS_DAEMON\1$GITSTATUS_NUM_THREADS\1'
   _p9k__param_pat+=$'$GITSTATUS_CACHE_DIR\1$GITSTATUS_AUTO_INSTALL\1${ZLE_RPROMPT_INDENT:-1}\1'
