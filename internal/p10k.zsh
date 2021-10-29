@@ -5777,7 +5777,7 @@ function _p9k_set_prompt() {
 
   PROMPT=
   RPROMPT=
-  [[ $1 == instant_ ]] || PROMPT+='${$((_p9k_on_expand()))+}'
+  [[ $1 == instant_ ]] || PROMPT+='${$((_p9k_on_expand()))+}%{${_p9k__raw_msg-}${_p9k__raw_msg::=}%}'
   PROMPT+=$_p9k_prompt_prefix_left
 
   local -i _p9k__has_upglob
@@ -5933,7 +5933,7 @@ _p9k_set_instant_prompt() {
   [[ -n $RPROMPT ]] || unset RPROMPT
 }
 
-typeset -gri __p9k_instant_prompt_version=44
+typeset -gri __p9k_instant_prompt_version=45
 
 _p9k_dump_instant_prompt() {
   local user=${(%):-%n}
@@ -6236,7 +6236,7 @@ _p9k_dump_instant_prompt() {
   fi
   typeset -g __p9k_instant_prompt_output=${TMPDIR:-/tmp}/p10k-instant-prompt-output-${(%):-%n}-$$
   { echo -n > $__p9k_instant_prompt_output } || return
-  print -rn -- "$out" || return
+  print -rn -- "${out}${esc}?2004h" || return
   if (( $+commands[stty] )); then
     command stty -icanon 2>/dev/null
   fi
