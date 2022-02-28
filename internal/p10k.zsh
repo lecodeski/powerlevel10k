@@ -3116,6 +3116,25 @@ _p9k_prompt_plenv_init() {
 }
 
 ################################################################
+# Segment to display perlbrew information
+# https://github.com/gugod/App-perlbrew
+
+prompt_perlbrew() {
+  if (( _POWERLEVEL9K_PERLBREW_PROJECT_ONLY )); then
+    _p9k_upglob 'cpanfile|.perltidyrc|(|MY)META.(yml|json)|(Makefile|Build).PL|*.(pl|pm|t|pod)' && return
+  fi
+
+  local v=$PERLBREW_PERL
+  (( _POWERLEVEL9K_PERLBREW_SHOW_PREFIX )) || v=${v#*-}
+  [[ -n $v ]] || return
+  _p9k_prompt_segment "$0" "blue" "$_p9k_color1" 'PERL_ICON' 0 '' "${v//\%/%%}"
+}
+
+_p9k_prompt_perlbrew_init() {
+  typeset -g "_p9k__segment_cond_${_p9k__prompt_side}[_p9k__segment_index]"='$PERLBREW_PERL'
+}
+
+################################################################
 # Segment to display chruby information
 # see https://github.com/postmodern/chruby/issues/245 for chruby_auto issue with ZSH
 prompt_chruby() {
@@ -7431,6 +7450,8 @@ _p9k_init_params() {
   _p9k_declare -b POWERLEVEL9K_DOTNET_VERSION_PROJECT_ONLY 1
   _p9k_declare -b POWERLEVEL9K_GO_VERSION_PROJECT_ONLY 1
   _p9k_declare -b POWERLEVEL9K_RUST_VERSION_PROJECT_ONLY 1
+  _p9k_declare -b POWERLEVEL9K_PERLBREW_PROJECT_ONLY 1
+  _p9k_declare -b POWERLEVEL9K_PERLBREW_SHOW_PREFIX 0
   _p9k_declare -b POWERLEVEL9K_JAVA_VERSION_PROJECT_ONLY 0
   _p9k_declare -b POWERLEVEL9K_NODENV_PROMPT_ALWAYS_SHOW 0
   _p9k_declare -a POWERLEVEL9K_NODENV_SOURCES -- shell local global
@@ -8274,7 +8295,7 @@ _p9k_must_init() {
     [[ $sig == $_p9k__param_sig ]] && return 1
     _p9k_deinit
   fi
-  _p9k__param_pat=$'v134\1'${(q)ZSH_VERSION}$'\1'${(q)ZSH_PATCHLEVEL}$'\1'
+  _p9k__param_pat=$'v135\1'${(q)ZSH_VERSION}$'\1'${(q)ZSH_PATCHLEVEL}$'\1'
   _p9k__param_pat+=$__p9k_force_term_shell_integration$'\1'
   _p9k__param_pat+=$'${#parameters[(I)POWERLEVEL9K_*]}\1${(%):-%n%#}\1$GITSTATUS_LOG_LEVEL\1'
   _p9k__param_pat+=$'$GITSTATUS_ENABLE_LOGGING\1$GITSTATUS_DAEMON\1$GITSTATUS_NUM_THREADS\1'
