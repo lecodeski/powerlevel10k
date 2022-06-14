@@ -3492,7 +3492,7 @@ prompt_shell_level() {
               *) (( prompt_shlvl_roman = SHLVL - 1 ));;
           esac
       }
-      _p9k_prompt_segment $0 "$_p9k_color1" yellow DIRENV_ICON 1 -t $prompt_shlvl_roman
+      _p9k_prompt_segment $0 "$_p9k_color1" orange1 DIRENV_ICON 1 -t $prompt_shlvl_roman
   fi
 }
 
