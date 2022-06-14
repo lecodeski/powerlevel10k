@@ -3468,6 +3468,35 @@ _p9k_build_test_stats() {
 }
 
 ################################################################
+# Segment to indicate shell level. Credits to zmwangx.
+prompt_shell_level() {
+  local msg
+  local effective_shlvl=$SHLVL
+  # Decrease effective level by one inside tmux
+  (( $+TMUX )) && (( effective_shlvl-- ))
+  if (( effective_shlvl > 1 )); then
+      [[ -n $prompt_shlvl_roman ]] || {
+          # Use Roman numerals of effective_shlvl - 1 for up to six levels of
+          # nesting (VII is too wide to good look as a normal character)
+          case $effective_shlvl in
+              2) prompt_shlvl_roman=$'\u2160';;  # I
+              3) prompt_shlvl_roman=$'\u2161';;  # II
+              4) prompt_shlvl_roman=$'\u2162';;  # III
+              5) prompt_shlvl_roman=$'\u2163';;  # IV
+              6) prompt_shlvl_roman=$'\u2164';;  # V
+              7) prompt_shlvl_roman=$'\u2165';;  # VI
+              8) prompt_shlvl_roman=$'\u2166 ';; # VII
+              9) prompt_shlvl_roman=$'\u2167 ';; # VIII
+             10) prompt_shlvl_roman=$'\u2168';;  # IV
+             11) prompt_shlvl_roman=$'\u2169';;  # X
+              *) (( prompt_shlvl_roman = SHLVL - 1 ));;
+          esac
+      }
+      _p9k_prompt_segment $0 "$_p9k_color1" yellow DIRENV_ICON 1 -t $prompt_shlvl_roman
+  fi
+}
+
+################################################################
 # System time
 prompt_time() {
   if (( _POWERLEVEL9K_EXPERIMENTAL_TIME_REALTIME )); then
@@ -7265,7 +7294,7 @@ _p9k_init_params() {
   _p9k_declare -F POWERLEVEL9K_NEW_TTY_MAX_AGE_SECONDS 5
   _p9k_declare -i POWERLEVEL9K_INSTANT_PROMPT_COMMAND_LINES
   _p9k_declare -a POWERLEVEL9K_LEFT_PROMPT_ELEMENTS -- context dir vcs
-  _p9k_declare -a POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS -- status root_indicator background_jobs history time
+  _p9k_declare -a POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS -- status root_indicator background_jobs history shell_level time
   _p9k_declare -b POWERLEVEL9K_DISABLE_RPROMPT 0
   _p9k_declare -b POWERLEVEL9K_PROMPT_ADD_NEWLINE 0
   _p9k_declare -b POWERLEVEL9K_PROMPT_ON_NEWLINE 0

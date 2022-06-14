@@ -95,6 +95,7 @@
     todo                    # todo items (https://github.com/todotxt/todo.txt-cli)
     timewarrior             # timewarrior tracking status (https://timewarrior.net/)
     taskwarrior             # taskwarrior task count (https://taskwarrior.org/)
+    shell_level             # current shell nesting level
     # time                  # current time
     # =========================[ Line #2 ]=========================
     newline
@@ -1643,6 +1644,11 @@
   #   P9K_WIFI_RSSI         | signal strength in dBm, from -120 to 0
   #   P9K_WIFI_NOISE        | noise in dBm, from -120 to 0
   #   P9K_WIFI_BARS         | signal strength in bars, from 0 to 4 (derived from P9K_WIFI_RSSI and P9K_WIFI_NOISE)
+
+  #######################[ shell_level: current shell nesting level ]#######################
+  # Shell level color.
+  typeset -g POWERLEVEL9K_SHELL_LEVEL_FOREGROUND=3
+  typeset -g POWERLEVEL9K_SHELL_LEVEL_BACKGROUND=0
 
   ####################################[ time: current time ]####################################
   # Current time color.
