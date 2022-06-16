@@ -412,6 +412,7 @@ Powerlevel10k.
 - [Homebrew](#homebrew)
 - [Arch Linux](#arch-linux)
 - [Alpine Linux](#arch-linux)
+- [Fig](#fig)
 
 ### Manual
 
@@ -514,6 +515,11 @@ apk add zsh zsh-theme-powerlevel10k
 mkdir -p ~/.local/share/zsh/plugins
 ln -s /usr/share/zsh/plugins/powerlevel10k ~/.local/share/zsh/plugins/
 ```
+
+### Fig
+
+Follow the instructions on
+[this page](https://fig.io/plugins/other/powerlevel10k).
 
 ## Configuration
 
