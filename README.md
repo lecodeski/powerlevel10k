@@ -409,6 +409,7 @@ Powerlevel10k.
 - [Zgen](#zgen)
 - [Zplugin](#zplugin)
 - [Zinit](#zinit)
+- [Zi](#zi)
 - [Homebrew](#homebrew)
 - [Arch Linux](#arch-linux)
 - [Alpine Linux](#arch-linux)
@@ -482,6 +483,13 @@ supported by Powerlevel10k.
 ### Zinit
 
 Add `zinit ice depth=1; zinit light romkatv/powerlevel10k` to `~/.zshrc`.
+
+The use of `depth=1` ice is optional. Other types of ice are neither recommended nor officially
+supported by Powerlevel10k.
+
+### Zi
+
+Add `zi ice depth=1; zi light romkatv/powerlevel10k` to `~/.zshrc`.
 
 The use of `depth=1` ice is optional. Other types of ice are neither recommended nor officially
 supported by Powerlevel10k.
@@ -811,6 +819,7 @@ The command to update Powerlevel10k depends on how it was installed.
 | [Zgen](#zgen)                 | `zgen update`                                               |
 | [Zplugin](#zplugin)           | `zplugin update`                                            |
 | [Zinit](#zinit)               | `zinit update`                                              |
+| [Zi](#zi)                     | `zi update`                                                 |
 | [Homebrew](#homebrew)         | `brew update && brew upgrade`                               |
 | [Arch Linux](#arch-linux)     | `yay -S --noconfirm zsh-theme-powerlevel10k-git`            |
 | [Alpine Linux](#alpine-linux) | `apk update && apk upgrade`                                 |
@@ -862,6 +871,7 @@ The command to update Powerlevel10k depends on how it was installed.
    | [Zgen](#zgen)                 | `zgen reset`                                                     |
    | [Zplugin](#zplugin)           | `zplugin delete romkatv/powerlevel10k`                           |
    | [Zinit](#zinit)               | `zinit delete romkatv/powerlevel10k`                             |
+   | [Zi](#zi)                     | `zi delete romkatv/powerlevel10k`                                |
    | [Homebrew](#homebrew)         | `brew uninstall powerlevel10k; brew untap romkatv/powerlevel10k` |
    | [Arch Linux](#arch-linux)     | `yay -R --noconfirm zsh-theme-powerlevel10k-git`                 |
    | [Alpine Linux](#alpine-linux) | `apk del zsh-theme-powerlevel10k`                                |
