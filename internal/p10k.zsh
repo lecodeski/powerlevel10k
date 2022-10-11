@@ -5673,6 +5673,31 @@ _p9k_prompt_haskell_stack_init() {
   typeset -g "_p9k__segment_cond_${_p9k__prompt_side}[_p9k__segment_index]"='$commands[stack]'
 }
 
+################################################################
+# CPU Architecture
+prompt_cpu_arch() {
+  local -i len=$#_p9k__prompt _p9k__has_upglob
+
+  local state text
+  if _p9k_cache_ephemeral_get $0; then
+    state=$_p9k__cache_val[1]
+    text=$_p9k__cache_val[2]
+  else
+    text=$(command arch) 2>/dev/null && [[ $text == [a-zA-Z][a-zA-Z0-9_]# ]] || text=
+    state=_${(U)text}
+    _p9k_cache_ephemeral_set "$state" "$text"
+  fi
+  if [[ -n $text ]]; then
+    _p9k_prompt_segment "$0$state" "yellow" "$_p9k_color1" 'ARCH_ICON' 0 '' "$text"
+  fi
+
+  (( _p9k__has_upglob )) || typeset -g "_p9k__segment_val_${_p9k__prompt_side}[_p9k__segment_index]"=$_p9k__prompt[len+1,-1]
+}
+
+_p9k_prompt_arch_init() {
+  typeset -g "_p9k__segment_cond_${_p9k__prompt_side}[_p9k__segment_index]"='$commands[arch]'
+}
+
 # Use two preexec hooks to survive https://github.com/MichaelAquilina/zsh-you-should-use with
 # YSU_HARDCORE=1. See https://github.com/romkatv/powerlevel10k/issues/427.
 _p9k_preexec1() {
