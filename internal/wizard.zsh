@@ -744,7 +744,7 @@ function ask_python() {
   return 0
 }
 
-function ask_arrow() {
+function ask_quotes() {
   add_widget 0 flowing -c %BDoes this look like%b "%2F><%f" %Bbut taller and "fatter?%b"
   add_widget 0 print -P ""
   add_widget 0 flowing -c -- "--->  \u276F\u276E  <---"
@@ -760,17 +760,18 @@ function ask_arrow() {
   ask ynr
   case $choice in
     r) return 1;;
-    y) cap_arrow=1;;
-    n) cap_arrow=0;;
+    y) cap_quotes=1;;
+    n) cap_quotes=0;;
   esac
   return 0
 }
 
-function ask_debian() {
-  add_widget 0 flowing -c %BDoes this look like a%b "%2FDebian logo%f" "%B(swirl/spiral)?%b"
-  add_widget 0 flowing -c reference: "$(href https://debian.org/logos/openlogo-nd.svg)"
+function ask_arrow() {
+  [[ -n $2 ]] && add_widget 0 flowing -c "$2"
+  add_widget 0 flowing -c %BDoes this look like an%b "%2Fupwards arrow%f%B?%b"
+  add_widget 0 flowing -c reference: "$(href https://graphemica.com/%F0%9F%A0%89)"
   add_widget 0 print -P ""
-  add_widget 0 flowing -c -- "--->  \uF306  <---"
+  add_widget 0 flowing -c -- "--->  $1  <---"
   add_widget 0 print -P ""
   add_widget 3
   add_widget 0 print -P "%B(y)  Yes.%b"
@@ -783,8 +784,8 @@ function ask_debian() {
   ask ynr
   case $choice in
     r) return 1;;
-    y) cap_debian=1;;
-    n) cap_debian=0;;
+    y) cap_arrow=1;;
+    n) cap_arrow=0;;
   esac
   return 0
 }
@@ -910,9 +911,9 @@ function ask_charset() {
       POWERLEVEL9K_ICON_PADDING=none
       cap_diamond=0
       cap_python=0
-      cap_debian=0
-      cap_lock=0
       cap_arrow=0
+      cap_lock=0
+      cap_quotes=0
     ;;
   esac
   return 0
@@ -1115,6 +1116,7 @@ function os_icon_name() {
           *artix*)                 echo LINUX_ARTIX_ICON;;
           *rhel*)                  echo LINUX_RHEL_ICON;;
           amzn)                    echo LINUX_AMZN_ICON;;
+          endeavouros)             echo LINUX_ENDEAVOUROS_ICON;;
           *)                       echo LINUX_ICON;;
         esac
         ;;
@@ -1188,7 +1190,7 @@ function ask_separators() {
   add_widget 2
   add_widget 0 print -P "%B(2)  Vertical.%b"
   add_prompt left_sep='' right_sep='' left_subsep=$vertical_bar right_subsep=$vertical_bar
-  if [[ $POWERLEVEL9K_MODE == nerdfont-complete ]]; then
+  if [[ $POWERLEVEL9K_MODE == nerdfont-* ]]; then
     extra+=3
     add_widget 0 print -P "%B(3)  Slanted.%b"
     add_prompt left_sep=$down_triangle right_sep=$up_triangle left_subsep=$slanted_bar right_subsep=$slanted_bar
@@ -1252,7 +1254,7 @@ function ask_heads() {
   fi
   add_widget 0 print -P "%B(2)  Blurred.%b"
   add_prompt left_head=$fade_out right_head=$fade_in
-  if [[ $POWERLEVEL9K_MODE == nerdfont-complete ]]; then
+  if [[ $POWERLEVEL9K_MODE == nerdfont-* ]]; then
     extra+=3
     add_widget 0 print -P "%B(3)  Slanted.%b"
     add_prompt left_head=$down_triangle right_head=$up_triangle
@@ -1320,7 +1322,7 @@ function ask_tails() {
     extra+=3
     add_widget 0 print -P "%B(3)  Sharp.%b"
     add_prompt left_tail=$left_triangle right_tail=$right_triangle
-    if [[ $POWERLEVEL9K_MODE == nerdfont-complete ]]; then
+    if [[ $POWERLEVEL9K_MODE == nerdfont-* ]]; then
       extra+=4
       add_widget 0 print -P "%B(4)  Slanted.%b"
       add_prompt left_tail=$up_triangle right_tail=$down_triangle
@@ -1720,9 +1722,14 @@ function generate_config() {
       sub PYTHON_ICON "'🐍'"
     fi
 
-    if [[ $POWERLEVEL9K_MODE == nerdfont-complete ]]; then
-      sub BATTERY_STAGES "'\uf58d\uf579\uf57a\uf57b\uf57c\uf57d\uf57e\uf57f\uf580\uf581\uf578'"
-    fi
+    case $POWERLEVEL9K_MODE in
+      nerdfont-complete)
+        sub BATTERY_STAGES "'\uf58d\uf579\uf57a\uf57b\uf57c\uf57d\uf57e\uf57f\uf580\uf581\uf578'"
+      ;;
+      nerdfont-v3)
+        sub BATTERY_STAGES "'\UF008E\UF007A\UF007B\UF007C\UF007D\UF007E\UF007F\UF0080\UF0081\UF0082\UF0079'"
+      ;;
+    esac
 
     if [[ $style == (classic|rainbow) ]]; then
       if [[ $style == classic ]]; then
@@ -2045,7 +2052,7 @@ while true; do
   local gap_char=' ' prompt_char='❯' down_triangle='\uE0BC' up_triangle='\uE0BA' slanted_bar='\u2571'
   local left_subsep= right_subsep= left_tail= right_tail= left_head= right_head= time=
   local -i num_lines=2 empty_line=0 color=2 left_frame=1 right_frame=1 transient_prompt=0
-  local -i cap_diamond=0 cap_python=0 cap_debian=0 cap_lock=0 cap_arrow=0
+  local -i cap_diamond=0 cap_python=0 cap_arrow=0 cap_lock=0 cap_quotes=0
   local -a extra_icons=('' '' '')
   local -a frame_color=(244 242 240 238)
   local -a color_name=(Lightest Light Dark Darkest)
@@ -2079,19 +2086,24 @@ while true; do
           if (( cap_diamond )); then
             POWERLEVEL9K_MODE=powerline
           else
-            ask_arrow || continue
-            (( cap_arrow )) && POWERLEVEL9K_MODE=compatible || POWERLEVEL9K_MODE=ascii
+            ask_quotes || continue
+            (( cap_quotes )) && POWERLEVEL9K_MODE=compatible || POWERLEVEL9K_MODE=ascii
           fi
         fi
       elif (( ! cap_diamond )); then
         POWERLEVEL9K_MODE=awesome-fontconfig
       else
-        ask_debian || continue
-        if (( cap_debian )); then
+        ask_arrow '\uFC35' || continue
+        if (( cap_arrow )); then
           POWERLEVEL9K_MODE=nerdfont-complete
         else
-          POWERLEVEL9K_MODE=awesome-fontconfig
-          ask_python || continue
+          ask_arrow '\UF0737' "Let's try another one." || continue
+          if (( cap_arrow )); then
+            POWERLEVEL9K_MODE=nerdfont-v3
+          else
+            POWERLEVEL9K_MODE=awesome-fontconfig
+            ask_python || continue
+          fi
         fi
       fi
     fi
