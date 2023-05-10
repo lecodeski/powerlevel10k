@@ -6634,9 +6634,12 @@ function _p9k_clear_instant_prompt() {
         unset _z4h_saved_screen
       fi
       print -rn -- $terminfo[rc]${(%):-%b%k%f%s%u}$terminfo[ed]
-      local unexpected=${(S)${${content//$'\e[?'<->'c'}//$'\e['<->' q'}//$'\e'[^$'\a\e']#($'\a'|$'\e\\')}
+      local unexpected=${${content//$'\e[?'<->'c'}//$'\e['<->' q'}
+      unexpected=${(S)unexpected//$'\eP'*[^$'\e']#($'\e\\')}
+      unexpected=${(S)unexpected//$'\e'[^$'\a\e']#($'\a'|$'\e\\')}
       # Visual Studio Code prints this garbage.
       unexpected=${${unexpected//$'\033[1;32mShell integration activated\033[0m\n'}//$'\r'}
+      typeset -g P9K_STARTUP_CONSOLE_OUTPUT=("$content" "$unexpected")
       if [[ -n $unexpected ]]; then
         local omz1='[Oh My Zsh] Would you like to update? [Y/n]: '
         local omz2='Updating Oh My Zsh'
