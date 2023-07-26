@@ -1126,7 +1126,7 @@ function os_icon_name() {
         if [[ -r /etc/os-release ]]; then
           local lines=(${(f)"$(</etc/os-release)"})
           lines=(${(@M)lines:#ID=*})
-          (( $#lines == 1 )) && os_release_id=${lines[1]#ID=}
+          (( $#lines == 1 )) && os_release_id=${(Q)${lines[1]#ID=}}
         elif [[ -e /etc/artix-release ]]; then
           os_release_id=artix
         fi
@@ -1156,6 +1156,7 @@ function os_icon_name() {
           *rhel*)                  echo LINUX_RHEL_ICON;;
           amzn)                    echo LINUX_AMZN_ICON;;
           endeavouros)             echo LINUX_ENDEAVOUROS_ICON;;
+          rocky)                   echo LINUX_ROCKY_ICON;;
           *)                       echo LINUX_ICON;;
         esac
         ;;
