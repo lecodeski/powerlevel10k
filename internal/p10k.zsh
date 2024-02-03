@@ -7483,7 +7483,7 @@ _p9k_init_params() {
       'gnu.org'                        VCS_GIT_GNU_ICON
       'kde.org'                        VCS_GIT_KDE_ICON
       'kernel.org'                     VCS_GIT_LINUX_ICON
-      'sourcehut.org'                  VCS_GIT_SOURCEHUT_ICON
+      'sr.ht'                          VCS_GIT_SOURCEHUT_ICON
     )
     typeset -ga _POWERLEVEL9K_VCS_GIT_REMOTE_ICONS
     for domain icon in "${domain2icon[@]}"; do
@@ -9487,7 +9487,7 @@ if [[ $__p9k_dump_file != $__p9k_instant_prompt_dump_file && -n $__p9k_instant_p
   zf_rm -f -- $__p9k_instant_prompt_dump_file{,.zwc} 2>/dev/null
 fi
 
-typeset -g P9K_VERSION=1.19.15
+typeset -g P9K_VERSION=1.20.0
 unset VSCODE_SHELL_INTEGRATION
 
 _p9k_init_ssh
