@@ -4984,6 +4984,18 @@ function instant_prompt_ranger() {
   _p9k_prompt_segment prompt_ranger $_p9k_color1 yellow RANGER_ICON 1 '$RANGER_LEVEL' '$RANGER_LEVEL'
 }
 
+function prompt_yazi() {
+  _p9k_prompt_segment $0 $_p9k_color1 yellow YAZI_ICON 0 '' $YAZI_LEVEL
+}
+
+_p9k_prompt_yazi_init() {
+  typeset -g "_p9k__segment_cond_${_p9k__prompt_side}[_p9k__segment_index]"='$YAZI_LEVEL'
+}
+
+function instant_prompt_yazi() {
+  _p9k_prompt_segment prompt_yazi $_p9k_color1 yellow YAZI_ICON 1 '$YAZI_LEVEL' '$YAZI_LEVEL'
+}
+
 function prompt_midnight_commander() {
   local -i len=$#_p9k__prompt _p9k__has_upglob
   _p9k_prompt_segment $0 $_p9k_color1 yellow MIDNIGHT_COMMANDER_ICON 0 '' ''
@@ -9489,7 +9501,7 @@ if [[ $__p9k_dump_file != $__p9k_instant_prompt_dump_file && -n $__p9k_instant_p
   zf_rm -f -- $__p9k_instant_prompt_dump_file{,.zwc} 2>/dev/null
 fi
 
-typeset -g P9K_VERSION=1.20.1
+typeset -g P9K_VERSION=1.20.2
 unset VSCODE_SHELL_INTEGRATION
 
 _p9k_init_ssh
