@@ -138,6 +138,14 @@ function getColorCode() {
   return 1
 }
 
+function _p9k_codeset_is_utf8() {
+  # Use `case` to survive SH_GLOB.
+  case "${langinfo[CODESET]}" in
+    utf-8|UTF-8|utf8|UTF8) return 0;;
+    *) return 1;;
+  esac
+}
+
 # _p9k_declare <type> <uppercase-name> [default]...
 function _p9k_declare() {
   local -i set=$+parameters[$2]
@@ -1796,7 +1804,7 @@ prompt_dir() {
   if (( $+_POWERLEVEL9K_SHORTEN_DELIMITER )); then
     local delim=$_POWERLEVEL9K_SHORTEN_DELIMITER
   else
-    if [[ $langinfo[CODESET] == (utf|UTF)(-|)8 ]]; then
+    if _p9k_codeset_is_utf8; then
       local delim=$'\u2026'
     else
       local delim='..'
@@ -6851,13 +6859,13 @@ function _p9k_restore_special_params() {
 }
 
 function _p9k_on_expand() {
-  (( _p9k__expanded && ! ${+__p9k_instant_prompt_active} )) && [[ "${langinfo[CODESET]}" == (utf|UTF)(-|)8 ]] && return
+  (( _p9k__expanded && ! ${+__p9k_instant_prompt_active} )) && _p9k_codeset_is_utf8 && return
 
   eval "$__p9k_intro_no_locale"
 
-  if [[ $langinfo[CODESET] != (utf|UTF)(-|)8 ]]; then
+  if ! _p9k_codeset_is_utf8; then
     _p9k_restore_special_params
-    if [[ $langinfo[CODESET] != (utf|UTF)(-|)8 ]] && _p9k_init_locale; then
+    if ! _p9k_codeset_is_utf8 && _p9k_init_locale; then
       if [[ -n $LC_ALL ]]; then
         _p9k__real_lc_all=$LC_ALL
         LC_ALL=$__p9k_locale
@@ -7458,7 +7466,7 @@ _p9k_init_params() {
   _p9k_declare -i POWERLEVEL9K_VCS_SHORTEN_LENGTH
   _p9k_declare -i POWERLEVEL9K_VCS_SHORTEN_MIN_LENGTH
   _p9k_declare -s POWERLEVEL9K_VCS_SHORTEN_STRATEGY
-  if [[ $langinfo[CODESET] == (utf|UTF)(-|)8 ]]; then
+  if _p9k_codeset_is_utf8; then
     _p9k_declare -e POWERLEVEL9K_VCS_SHORTEN_DELIMITER '\u2026'
   else
     _p9k_declare -e POWERLEVEL9K_VCS_SHORTEN_DELIMITER '..'
@@ -9519,7 +9527,7 @@ if [[ $__p9k_dump_file != $__p9k_instant_prompt_dump_file && -n $__p9k_instant_p
   zf_rm -f -- $__p9k_instant_prompt_dump_file{,.zwc} 2>/dev/null
 fi
 
-typeset -g P9K_VERSION=1.20.16
+typeset -g P9K_VERSION=1.20.17
 
 if [[ ${VSCODE_SHELL_INTEGRATION-} == <1-> && ${+__p9k_force_term_shell_integration} == 0 ]]; then
   typeset -gri __p9k_force_term_shell_integration=1
