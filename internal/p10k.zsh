@@ -1901,11 +1901,18 @@ prompt_dir() {
       local rp=${(g:oce:)p}
       local rparts=("${(@s:/:)rp}")
 
-      local -i i=2 e=$(($#parts - shortenlen))
+      local -i i=2 e=$(($#parts - shortenlen)) anchor_first=0
       if [[ -n $_POWERLEVEL9K_DIR_TRUNCATE_BEFORE_MARKER ]]; then
         (( e += shortenlen ))
         local orig=("$parts[2]" "${(@)parts[$((shortenlen > $#parts ? -$#parts : -shortenlen)),-1]}")
       elif [[ $p[1] == / ]]; then
+        (( ++i ))
+        (( _POWERLEVEL9K_DIR_ANCHOR_FIRST )) && anchor_first=1
+      elif (( _POWERLEVEL9K_DIR_ANCHOR_FIRST )) && (( $#parts > 1 )); then
+        # Treat the first directory under '~' (or any other named directory) as
+        # an anchor, just like the first directory under '/'. It's neither
+        # shortened nor dimmed, and both it and '~' get ANCHOR_FOREGROUND.
+        anchor_first=1
         (( ++i ))
       fi
       if (( i <= e )); then
@@ -1919,7 +1926,17 @@ prompt_dir() {
         local parent=$_p9k__cwd[1,-2-$#rtail]
         _p9k_prompt_length $delim
         local -i real_delim_len=_p9k__ret
-        [[ -n $parts[i-1] ]] && parts[i-1]="\${(Q)\${:-${(qqq)${(q)parts[i-1]}}}}"$'\2'
+        # Leading anchors are marked with \4 instead of \2: they get the anchor
+        # foreground but not ANCHOR_BOLD -- only the last directory is bold.
+        # A component that happens to be the last one keeps the \2 marker.
+        local mark1=$'\2' mark2=$'\2'
+        if (( anchor_first )); then
+          (( i - 1 < $#parts )) && mark1=$'\4'
+          (( i - 2 < $#parts )) && mark2=$'\4'
+        fi
+        [[ -n $parts[i-1] ]] && parts[i-1]="\${(Q)\${:-${(qqq)${(q)parts[i-1]}}}}"$mark1
+        (( anchor_first )) && (( i > 2 )) && [[ -n $parts[i-2] ]] &&
+          parts[i-2]="\${(Q)\${:-${(qqq)${(q)parts[i-2]}}}}"$mark2
         local -i d=${_POWERLEVEL9K_SHORTEN_DELIMITER_LENGTH:--1}
         (( d >= 0 )) || d=real_delim_len
         local -i m=1
@@ -2081,14 +2098,15 @@ prompt_dir() {
       parts[-1]=$_p9k__ret${parts[-1]//$'\1'/$'\1'$_p9k__ret}$style
     fi
 
-    local anchor_style=
+    local anchor_style= anchor_fg=
     _p9k_param $state ANCHOR_BOLD ''
     [[ $_p9k__ret == true ]] && anchor_style+=%B
     if (( $+parameters[_POWERLEVEL9K_DIR_ANCHOR_FOREGROUND] ||
           $+parameters[_POWERLEVEL9K_${state_u}_ANCHOR_FOREGROUND] )); then
       _p9k_color $state ANCHOR_FOREGROUND ''
       _p9k_foreground $_p9k__ret
-      anchor_style+=$_p9k__ret
+      anchor_fg=$_p9k__ret
+      anchor_style+=$anchor_fg
     fi
     if [[ -n $anchor_style ]]; then
       (( expand )) && _p9k_escape_style $anchor_style || _p9k__ret=$anchor_style
@@ -2100,6 +2118,14 @@ prompt_dir() {
       fi
     else
       parts=("${(@)parts/$'\2'}")
+    fi
+
+    # Leading anchors (\4): anchor foreground without ANCHOR_BOLD.
+    if [[ -n $anchor_fg ]]; then
+      (( expand )) && _p9k_escape_style $anchor_fg || _p9k__ret=$anchor_fg
+      parts=("${(@)parts/%(#b)(*)$'\4'/$_p9k__ret$match[1]$style}")
+    else
+      parts=("${(@)parts/$'\4'}")
     fi
 
     if (( $+parameters[_POWERLEVEL9K_DIR_SHORTENED_FOREGROUND] ||
@@ -7602,6 +7628,12 @@ _p9k_init_params() {
   esac
   typeset -gi _POWERLEVEL9K_DIR_SHOW_WRITABLE
   _p9k_declare -b POWERLEVEL9K_DIR_OMIT_FIRST_CHARACTER 0
+  # When set to true, the first directory below '~' (or any other named
+  # directory) is an anchor: it's never shortened and it's colored with
+  # POWERLEVEL9K_DIR_ANCHOR_FOREGROUND, the same way as the first directory
+  # below '/' and the last directory of the path. Applies only when
+  # POWERLEVEL9K_SHORTEN_STRATEGY=truncate_to_unique.
+  _p9k_declare -b POWERLEVEL9K_DIR_ANCHOR_FIRST 0
   _p9k_declare -b POWERLEVEL9K_DIR_HYPERLINK 0
   _p9k_declare -s POWERLEVEL9K_SHORTEN_STRATEGY ""
   local markers=(
