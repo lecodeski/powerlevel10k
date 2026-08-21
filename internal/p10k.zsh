@@ -1762,6 +1762,20 @@ function _p9k_url_escape() {
   _p9k__ret=${1//(#m)[^a-zA-Z0-9"\/:_.-!'()~"]/%%${(l:2::0:)$(([##16]#MATCH))}}
 }
 
+# Usage: _p9k_dir_anchor_mark part-index num-parts
+#
+# Style marker for a leading anchor of POWERLEVEL9K_DIR_ANCHOR_FIRST: $'\4' for
+# the anchor foreground alone, $'\2' where ANCHOR_BOLD applies as well -- on the
+# last component and on a POWERLEVEL9K_SHORTEN_FOLDER_MARKER directory.
+function _p9k_dir_anchor_mark() {
+  _p9k__ret=$'\2'
+  (( $1 < $2 )) || return
+  # _p9k__parent_dirs is deepest first and aligned with parts at the deep end.
+  local dir=$_p9k__parent_dirs[$2-$1+1]
+  [[ -n $dir && -n $_POWERLEVEL9K_SHORTEN_FOLDER_MARKER &&
+     -n $dir/${~_POWERLEVEL9K_SHORTEN_FOLDER_MARKER}(#qN) ]] || _p9k__ret=$'\4'
+}
+
 ################################################################
 # Dir: current working directory
 prompt_dir() {
@@ -1921,18 +1935,19 @@ prompt_dir() {
       else
         local key=
       fi
+      # The folder marker lookup for the leading anchors reads their content.
+      (( anchor_first )) && key+=":${(pj.:.)_p9k__parent_mtimes[$#parts-i+2,$#parts-i+3]}"
       if ! _p9k_cache_ephemeral_get $0 $e $i $_p9k__cwd $p || [[ $key != $_p9k__cache_val[1] ]]; then
         local rtail=${(j./.)rparts[i,-1]}
         local parent=$_p9k__cwd[1,-2-$#rtail]
         _p9k_prompt_length $delim
         local -i real_delim_len=_p9k__ret
-        # Leading anchors are marked with \4 instead of \2: they get the anchor
-        # foreground but not ANCHOR_BOLD -- only the last directory is bold.
-        # A component that happens to be the last one keeps the \2 marker.
         local mark1=$'\2' mark2=$'\2'
         if (( anchor_first )); then
-          (( i - 1 < $#parts )) && mark1=$'\4'
-          (( i - 2 < $#parts )) && mark2=$'\4'
+          _p9k_dir_anchor_mark $((i-1)) $#parts
+          mark1=$_p9k__ret
+          _p9k_dir_anchor_mark $((i-2)) $#parts
+          mark2=$_p9k__ret
         fi
         [[ -n $parts[i-1] ]] && parts[i-1]="\${(Q)\${:-${(qqq)${(q)parts[i-1]}}}}"$mark1
         (( anchor_first )) && (( i > 2 )) && [[ -n $parts[i-2] ]] &&
@@ -7629,9 +7644,10 @@ _p9k_init_params() {
   typeset -gi _POWERLEVEL9K_DIR_SHOW_WRITABLE
   _p9k_declare -b POWERLEVEL9K_DIR_OMIT_FIRST_CHARACTER 0
   # When set to true, the first directory below '~' (or any other named
-  # directory) is an anchor: it's never shortened and it's colored with
-  # POWERLEVEL9K_DIR_ANCHOR_FOREGROUND, the same way as the first directory
-  # below '/' and the last directory of the path. Applies only when
+  # directory) is an anchor: never shortened and colored with
+  # POWERLEVEL9K_DIR_ANCHOR_FOREGROUND, just like the first directory below '/'.
+  # POWERLEVEL9K_DIR_ANCHOR_BOLD applies to such a leading anchor only if it
+  # holds a POWERLEVEL9K_SHORTEN_FOLDER_MARKER. Applies only when
   # POWERLEVEL9K_SHORTEN_STRATEGY=truncate_to_unique.
   _p9k_declare -b POWERLEVEL9K_DIR_ANCHOR_FIRST 0
   _p9k_declare -b POWERLEVEL9K_DIR_HYPERLINK 0
