@@ -1762,20 +1762,6 @@ function _p9k_url_escape() {
   _p9k__ret=${1//(#m)[^a-zA-Z0-9"\/:_.-!'()~"]/%%${(l:2::0:)$(([##16]#MATCH))}}
 }
 
-# Usage: _p9k_dir_anchor_mark part-index num-parts
-#
-# Style marker for a leading anchor of POWERLEVEL9K_DIR_ANCHOR_FIRST: $'\4' for
-# the anchor foreground alone, $'\2' where ANCHOR_BOLD applies as well -- on the
-# last component and on a POWERLEVEL9K_SHORTEN_FOLDER_MARKER directory.
-function _p9k_dir_anchor_mark() {
-  _p9k__ret=$'\2'
-  (( $1 < $2 )) || return
-  # _p9k__parent_dirs is deepest first and aligned with parts at the deep end.
-  local dir=$_p9k__parent_dirs[$2-$1+1]
-  [[ -n $dir && -n $_POWERLEVEL9K_SHORTEN_FOLDER_MARKER &&
-     -n $dir/${~_POWERLEVEL9K_SHORTEN_FOLDER_MARKER}(#qN) ]] || _p9k__ret=$'\4'
-}
-
 ################################################################
 # Dir: current working directory
 prompt_dir() {
@@ -1942,16 +1928,18 @@ prompt_dir() {
         local parent=$_p9k__cwd[1,-2-$#rtail]
         _p9k_prompt_length $delim
         local -i real_delim_len=_p9k__ret
-        local mark1=$'\2' mark2=$'\2'
-        if (( anchor_first )); then
-          _p9k_dir_anchor_mark $((i-1)) $#parts
-          mark1=$_p9k__ret
-          _p9k_dir_anchor_mark $((i-2)) $#parts
-          mark2=$_p9k__ret
-        fi
-        [[ -n $parts[i-1] ]] && parts[i-1]="\${(Q)\${:-${(qqq)${(q)parts[i-1]}}}}"$mark1
-        (( anchor_first )) && (( i > 2 )) && [[ -n $parts[i-2] ]] &&
-          parts[i-2]="\${(Q)\${:-${(qqq)${(q)parts[i-2]}}}}"$mark2
+        # $'\4' is the anchor color without ANCHOR_BOLD. $'\2' keeps the bold
+        # where p10k bolds any anchor: the last component and folder marker dirs.
+        # parts and _p9k__parent_dirs align at the deep end. _p9k_glob returns
+        # the match count, hence success means "no marker".
+        local marker=$_POWERLEVEL9K_SHORTEN_FOLDER_MARKER mark
+        local -i k
+        for (( k = 1; k < i; ++k )); do
+          [[ -n $parts[k] ]] || continue
+          mark=$'\2'
+          (( anchor_first && k < $#parts )) && { [[ -z $marker ]] || _p9k_glob $(($#parts-k+1)) $marker } && mark=$'\4'
+          parts[k]="\${(Q)\${:-${(qqq)${(q)parts[k]}}}}"$mark
+        done
         local -i d=${_POWERLEVEL9K_SHORTEN_DELIMITER_LENGTH:--1}
         (( d >= 0 )) || d=real_delim_len
         local -i m=1
@@ -2135,12 +2123,15 @@ prompt_dir() {
       parts=("${(@)parts/$'\2'}")
     fi
 
-    # Leading anchors (\4): anchor foreground without ANCHOR_BOLD.
-    if [[ -n $anchor_fg ]]; then
-      (( expand )) && _p9k_escape_style $anchor_fg || _p9k__ret=$anchor_fg
-      parts=("${(@)parts/%(#b)(*)$'\4'/$_p9k__ret$match[1]$style}")
-    else
-      parts=("${(@)parts/$'\4'}")
+    # Leading anchors ($'\4'): anchor foreground without ANCHOR_BOLD. Only the
+    # first two components can carry the mark, and only with ANCHOR_FIRST.
+    if (( _POWERLEVEL9K_DIR_ANCHOR_FIRST )); then
+      if [[ -n $anchor_fg ]]; then
+        (( expand )) && _p9k_escape_style $anchor_fg || _p9k__ret=$anchor_fg
+        parts[1,2]=("${(@)parts[1,2]/%(#b)(*)$'\4'/$_p9k__ret$match[1]$style}")
+      else
+        parts[1,2]=("${(@)parts[1,2]/$'\4'}")
+      fi
     fi
 
     if (( $+parameters[_POWERLEVEL9K_DIR_SHORTENED_FOREGROUND] ||
